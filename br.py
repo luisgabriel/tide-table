@@ -3,10 +3,10 @@
 
 import urllib2 as ulib
 import bs4 as bs
-import json
 
 URL = 'http://www.mar.mil.br/dhn/chm/tabuas/'
 YEAR = '2014'
+DATA_DIR = 'data'
 
 MOON_PHASES = {
     'Nova.gif': 'N',
@@ -104,6 +104,13 @@ def parse_month_table(content):
     return month_table
 
 if __name__ == '__main__':
+    import unidecode as undcd
+    import json
+    import os
+
+    if not os.path.exists(DATA_DIR):
+        os.mkdir(DATA_DIR)
+
     raw_html = ulib.urlopen(URL).read()
     home = bs.BeautifulSoup(raw_html)
 
@@ -135,5 +142,13 @@ if __name__ == '__main__':
             month_table = parse_month_table(content)
             port_table['table'].update(month_table)
 
-        print port_table['name'] + ' finished!'
+        clean_name = undcd.unidecode(port_table['name'])
+        file_name = clean_name.lower().replace(' ', '_') + '.json'
+        file_path = os.path.join(DATA_DIR, file_name)
+
+        fp = open(file_path, 'w+')
+        json.dump(port_table, fp, sort_keys=True)
+        fp.close()
+
+        print 'Finished! Saved in: %s' % file_path
 
