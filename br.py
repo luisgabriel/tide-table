@@ -3,6 +3,7 @@
 
 import urllib2 as ulib
 import bs4 as bs
+import unidecode as undcd
 
 URL = 'http://www.mar.mil.br/dhn/chm/tabuas/'
 YEAR = '2014'
@@ -26,7 +27,7 @@ def parse_port_option(option):
 def parse_header(content):
     header = {}
     center = content.find_all('center')[2]
-    header['name'] = center.strong.font.text
+    header['name'] = undcd.unidecode(center.strong.font.text)
 
     all_text = center.find_all('font')[1].text.encode('utf-8')
     info_text = all_text.split('\n\n')[0]
@@ -104,7 +105,6 @@ def parse_month_table(content):
     return month_table
 
 if __name__ == '__main__':
-    import unidecode as undcd
     import json
     import os
 
@@ -142,8 +142,7 @@ if __name__ == '__main__':
             month_table = parse_month_table(content)
             port_table['table'].update(month_table)
 
-        clean_name = undcd.unidecode(port_table['name'])
-        file_name = clean_name.lower().replace(' ', '_') + '.json'
+        file_name = port_table['name'].lower().replace(' ', '_') + '.json'
         file_path = os.path.join(DATA_DIR, file_name)
 
         fp = open(file_path, 'w+')
