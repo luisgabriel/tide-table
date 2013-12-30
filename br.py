@@ -3,6 +3,7 @@
 
 import urllib2 as ulib
 import bs4 as bs
+import json
 
 URL = 'http://www.mar.mil.br/dhn/chm/tabuas/'
 YEAR = '2014'
@@ -22,10 +23,32 @@ def parse_port_option(option):
         'name': option.text.strip()
     }
 
-def extract_location_name(content):
+def parse_header(content):
+    header = {}
     center = content.find_all('center')[2]
-    name = center.strong.font
-    return name.text
+    header['name'] = center.strong.font.text
+
+    all_text = center.find_all('font')[1].text.encode('utf-8')
+    info_text = all_text.split('\n\n')[0]
+    raw_info = [i.replace('\xc2\xa0', '') for i in info_text.split('\n')]
+
+    header['latitude'] = dm_to_decimal(raw_info[1].split(' ')[1])
+    header['longitude'] = dm_to_decimal(raw_info[2].split(' ')[1])
+
+    return header
+
+def dm_to_decimal(dm):
+    direction = dm[-1]
+    only_numbers = ''.join([c if c.isdigit() or c == ',' else ' ' for c in dm])
+    splitted = only_numbers.split(' ')
+    degrees = float(splitted[0])
+    minutes = float(splitted[2].replace(',', '.'))
+
+    decimal = degrees + minutes / 60
+    if direction in ['S', 'W']:
+        return -decimal
+    else:
+        return decimal
 
 def parse_day_table(rows):
     global current_moon
@@ -100,12 +123,14 @@ if __name__ == '__main__':
             content = bs.BeautifulSoup(raw_content)
 
             if index == 0:
-               name = extract_location_name(content)
+               header = parse_header(content)
                port_table = {
-                   'name': name,
+                   'name': header['name'],
+                   'latitude': header['latitude'],
+                   'longitude': header['longitude'],
                    'table': {}
                }
-               print 'Starting ' + name + '...'
+               print 'Starting ' + header['name'] + '...'
 
             month_table = parse_month_table(content)
             port_table['table'].update(month_table)
