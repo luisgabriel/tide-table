@@ -122,15 +122,18 @@ if __name__ == '__main__':
     month_options = months_combo.find_all(name='option')
     months = [m.text for m in month_options]
 
+    index_info = []
+
     for i in xrange(len(ports)):
         port_table = {}
-        for index, month in enumerate(months):
+        for j, month in enumerate(months):
             url = URL + ports[i]['id'] + month + YEAR + ".htm"
             raw_content = ulib.urlopen(url).read()
             content = bs.BeautifulSoup(raw_content)
 
-            if index == 0:
+            if j == 0:
                header = parse_header(content)
+               index_info.append(header)
                port_table = {
                    'name': header['name'],
                    'latitude': header['latitude'],
@@ -151,3 +154,10 @@ if __name__ == '__main__':
 
         print 'Finished! Saved in: %s' % file_path
 
+        index_info[-1]['file'] = file_name
+
+    # generate the index file
+    index_path = os.path.join(DATA_DIR, 'index.json')
+    fp = open(index_path, 'w+')
+    json.dump(index_info, fp, sort_keys=True, indent=4, separators=(',', ': '))
+    fp.close()
